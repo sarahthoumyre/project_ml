@@ -1,4 +1,5 @@
 import pandas as pd
+import requests, io, zipfile, ssl
 from fredapi import Fred
 
 class DataLoader:
@@ -34,7 +35,6 @@ class DataLoader:
     def load_fx(self):
         """Load FX pairs – all expressed versus USD (USD-based convention)."""
 
-        import requests, io, zipfile, ssl
         ssl._create_default_https_context = ssl._create_unverified_context
 
         def safe_get(series_id):
@@ -44,7 +44,6 @@ class DataLoader:
                 print(f"Skipping {series_id} — {type(e).__name__}: {e}")
                 return None
 
-        # --- USD-based pairs from FRED ---
         fred_codes = {
             "EURUSD": "DEXUSEU",   # USD per EUR 
             "USDGBP": "DEXUSUK",   # GBP per USD 
@@ -66,16 +65,15 @@ class DataLoader:
 
         fx = pd.DataFrame(fx_data).resample("B").last().ffill()
 
-        # --- Convert EURUSD to USD-based (currently USD per EUR) ---
+        # Convert EURUSD to USD-based (currently USD per EUR)
         if "EURUSD" in fx.columns:
             fx["USDEUR"] = 1 / fx["EURUSD"]
             fx = fx.drop(columns=["EURUSD"])
 
         fx = fx.sort_index().dropna(how="any")
 
-        # --- Add PLN & HUF via ECB data ---
+        # Add PLN & HUF via ECB data
         try:
-            import requests, io, zipfile
             url = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.zip"
             r = requests.get(url)
             with zipfile.ZipFile(io.BytesIO(r.content)) as z:
@@ -109,7 +107,7 @@ class DataLoader:
 
         return fx
 
-    # --- All data combined ---
+    # All data combined
     def load_all(self):
         """Load all datasets, align them on a common time range, and clean."""
         data = {
