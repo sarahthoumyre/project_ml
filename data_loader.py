@@ -38,7 +38,6 @@ class DataLoader:
         ssl._create_default_https_context = ssl._create_unverified_context
 
         def safe_get(series_id):
-            """Safely fetch a FRED series."""
             try:
                 return self.fred.get_series(series_id)
             except Exception as e:
